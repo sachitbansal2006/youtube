@@ -2,20 +2,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'home.dart';
-
-class Login extends StatefulWidget {
-  const Login({Key? key}) : super(key: key);
+class SignUp extends StatefulWidget {
+  const SignUp({Key? key}) : super(key: key);
 
   @override
-  _LoginState createState() => _LoginState();
+  _SignUpState createState() => _SignUpState();
 }
 
-class _LoginState extends State<Login> {
+class _SignUpState extends State<SignUp> {
   late String email;
   late String pass;
+  late String finalPass;
   final emailController = TextEditingController();
   final passController = TextEditingController();
+  final finalPassController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   final auth = FirebaseAuth.instance;
   late GoogleSignInAccount userObj;
@@ -24,14 +24,15 @@ class _LoginState extends State<Login> {
   void dispose() {
     emailController.dispose();
     passController.dispose();
+    finalPassController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    Future<void> login() async {
+    Future<void> SignUp() async {
       try {
-        await auth.signInWithEmailAndPassword(email: email, password: pass);
+        await auth.createUserWithEmailAndPassword(email: email, password: pass);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Signed In"),
           duration: Duration(milliseconds: 1000),
@@ -73,9 +74,13 @@ class _LoginState extends State<Login> {
                 },
               ),
               TextFormField(
+                onChanged: (value) {
+                  pass = value;
+                },
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.teal)),
+                    borderSide: BorderSide(color: Colors.teal),
+                  ),
                   hintText: 'password',
                 ),
                 controller: passController,
@@ -83,39 +88,36 @@ class _LoginState extends State<Login> {
                 validator: (value) =>
                     value!.length < 6 ? 'Password is too short' : null,
               ),
+              TextFormField(
+                onChanged: (value) {
+                  finalPass = value;
+                },
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal)),
+                  hintText: 'Confirm Password',
+                ),
+                controller: finalPassController,
+                keyboardType: TextInputType.visiblePassword,
+                validator: (value) {
+                  if (value!.length < 6) {
+                    return 'Length is short';
+                  }
+                  if (pass != finalPass) {
+                    return 'Passwords do not match';
+                  }
+                }
+              ),
               TextButton(
                 child: const Text('Login'),
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
                     email = emailController.text;
                     pass = passController.text;
-                    login();
+                    SignUp();
                   }
                 },
               ),
-              const SizedBox(
-                height: 30,
-              ),
-              TextButton(
-                child: const Text('Google Sign In'),
-                onPressed: () async {
-                  await GoogleSignIn().signIn().then((value) {
-                    setState(() {
-                      userObj = value!;
-                    });
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Home(
-                        email: userObj.email,
-                        photo: userObj.photoUrl.toString(),
-                        name: userObj.displayName.toString(),
-                      ),
-                    ),
-                  );
-                },
-              )
             ],
           ),
         ),
