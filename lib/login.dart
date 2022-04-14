@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:untitled/signin.dart';
 
 import 'home.dart';
 
@@ -32,6 +33,14 @@ class _LoginState extends State<Login> {
     Future<void> login() async {
       try {
         await auth.signInWithEmailAndPassword(email: email, password: pass);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Home(
+              id: FirebaseAuth.instance.currentUser!.uid,
+            ),
+          ),
+        );
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Signed In"),
           duration: Duration(milliseconds: 1000),
@@ -93,24 +102,44 @@ class _LoginState extends State<Login> {
                   }
                 },
               ),
+              TextButton(
+                child: const Text('Sign Up'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignUp(),
+                    ),
+                  );
+                },
+              ),
+
               const SizedBox(
                 height: 30,
               ),
               TextButton(
                 child: const Text('Google Sign In'),
                 onPressed: () async {
-                  await GoogleSignIn().signIn().then((value) {
+
+                  final GoogleSignInAccount googleUser = await GoogleSignIn().signIn().then((value) {
                     setState(() {
                       userObj = value!;
                     });
+                    return userObj;
                   });
+
+                  final GoogleSignInAuthentication? googleAuth = await googleUser.authentication;
+
+                  auth.signInWithCredential(GoogleAuthProvider.credential(
+                    accessToken: googleAuth?.accessToken,
+                    idToken: googleAuth?.idToken
+                  ));
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => Home(
-                        email: userObj.email,
-                        photo: userObj.photoUrl.toString(),
-                        name: userObj.displayName.toString(),
+                        id: userObj.id,
                       ),
                     ),
                   );
